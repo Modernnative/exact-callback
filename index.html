@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Exact Online koppeling, Modern Native</title>
+<style>
+  :root {
+    --bg: #f6f4ef;
+    --kaart: #ffffff;
+    --tekst: #1c1b18;
+    --zacht: #6b675e;
+    --lijn: #e2ded4;
+    --accent: #3f6b4f;
+    --fout: #9a3412;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17160f;
+      --kaart: #211f18;
+      --tekst: #f2efe6;
+      --zacht: #a8a393;
+      --lijn: #332f25;
+      --accent: #7fae8b;
+      --fout: #e9956b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    background: var(--bg); color: var(--tekst);
+    font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  .kaart {
+    width: 100%; max-width: 560px;
+    background: var(--kaart);
+    border: 1px solid var(--lijn); border-radius: 14px;
+    padding: 32px;
+  }
+  .merk {
+    font-size: 11px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--zacht); margin: 0 0 20px;
+  }
+  h1 { font-size: 21px; line-height: 1.3; margin: 0 0 6px; font-weight: 600; }
+  p { margin: 0 0 18px; color: var(--zacht); }
+  .code {
+    display: block; width: 100%;
+    font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    word-break: break-all;
+    background: var(--bg); color: var(--tekst);
+    border: 1px solid var(--lijn); border-radius: 10px;
+    padding: 14px; margin: 0 0 14px;
+  }
+  button {
+    font: inherit; font-weight: 600;
+    background: var(--accent); color: #fff;
+    border: 0; border-radius: 10px;
+    padding: 12px 20px; cursor: pointer;
+  }
+  button:active { transform: translateY(1px); }
+  .stap {
+    margin: 22px 0 0; padding: 16px 0 0;
+    border-top: 1px solid var(--lijn);
+    font-size: 14px; color: var(--zacht);
+  }
+  .stap code {
+    font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    color: var(--tekst);
+  }
+  .fout h1 { color: var(--fout); }
+</style>
+</head>
+<body>
+  <main class="kaart" id="kaart">
+    <p class="merk">Modern Native</p>
+    <div id="inhoud"></div>
+  </main>
+<script>
+(function () {
+  var p = new URLSearchParams(location.search);
+  var code = p.get("code");
+  var fout = p.get("error");
+  var omschrijving = p.get("error_description");
+  var kaart = document.getElementById("kaart");
+  var el = document.getElementById("inhoud");
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  if (code) {
+    el.innerHTML =
+      '<h1>Gelukt, hier is de autorisatiecode</h1>' +
+      '<p>Kopieer hem en plak hem in de terminal waar het koppelscript op je wacht. ' +
+      'De code is een paar minuten geldig, dus doe het nu.</p>' +
+      '<div class="code" id="codeveld">' + esc(code) + '</div>' +
+      '<button id="kopieer" type="button">Kopieer de code</button>' +
+      '<p class="stap">Script wacht niet meer? Start opnieuw met ' +
+      '<code>python3 exact_koppel.py</code> en doorloop deze stap nog een keer.</p>';
+
+    document.getElementById("kopieer").addEventListener("click", function () {
+      var knop = this;
+      var klaar = function () {
+        knop.textContent = "Gekopieerd";
+        setTimeout(function () { knop.textContent = "Kopieer de code"; }, 2200);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(klaar, function () {
+          knop.textContent = "Kopieren lukt niet, selecteer de code zelf";
+        });
+      } else {
+        var r = document.createRange();
+        r.selectNodeContents(document.getElementById("codeveld"));
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+        knop.textContent = "Code staat geselecteerd, kopieer met cmd+C";
+      }
+    });
+    return;
+  }
+
+  if (fout) {
+    kaart.className += " fout";
+    el.innerHTML =
+      '<h1>Exact gaf geen toegang</h1>' +
+      '<p>Melding van Exact: <strong>' + esc(fout) + '</strong>' +
+      (omschrijving ? '<br>' + esc(omschrijving) : '') + '</p>' +
+      '<p class="stap">Meestal betekent dit dat de koppeling is afgebroken of dat de ' +
+      'redirect URL in de app-registratie niet exact gelijk is aan deze pagina. ' +
+      'Die moet letterlijk zijn: <code id="hier"></code></p>';
+    var h = document.getElementById("hier");
+    if (h) h.textContent = location.origin + location.pathname;
+    return;
+  }
+
+  el.innerHTML =
+    '<h1>Terugkeerpagina voor de Exact Online koppeling</h1>' +
+    '<p>Deze pagina doet een ding: na het inloggen bij Exact Online komt je browser hier uit, ' +
+    'en dan toont hij de autorisatiecode die het koppelscript nodig heeft.</p>' +
+    '<p>Je ziet nu niets omdat je hier direct bent gekomen, zonder dat Exact je heeft ' +
+    'doorgestuurd. Start de koppeling vanuit de terminal, dan verloopt het goed.</p>' +
+    '<p class="stap">Registreer in Exact Online precies dit adres als redirect URL: ' +
+    '<code id="hier2"></code></p>';
+  var h2 = document.getElementById("hier2");
+  if (h2) h2.textContent = location.origin + location.pathname;
+})();
+</script>
+</body>
+</html>
